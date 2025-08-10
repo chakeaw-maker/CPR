@@ -105,6 +105,10 @@ export default function Page() {
     compressions: { running: false, startedAt: null, totalMs: 0 },
   });
 
+  // Feedback UI
+  const [toast, setToast] = useState(null);
+  const [lastEventId, setLastEventId] = useState(null);
+
   const [ui, setUi] = useState({
     defibEnergy: SHOCK_LEVELS[2],
     customNote: "",
@@ -144,6 +148,12 @@ export default function Page() {
       details,
     };
     setSession((s) => ({ ...s, events: [...s.events, e] }));
+    // Visual + haptic ack
+    setLastEventId(e.id);
+    try { if (navigator?.vibrate) navigator.vibrate(10); } catch {}
+    setToast({ msg: `${type}: ${label}`, ts: Date.now() });
+    setTimeout(() => setToast(null), 1200);
+    setTimeout(() => setLastEventId(null), 1500);
     return e;
   };
 
@@ -410,7 +420,7 @@ export default function Page() {
               </thead>
               <tbody>
                 {session.events.map((e) => (
-                  <tr key={e.id} className="border-t">
+                  <tr key={e.id} className={`border-t ${e.id === lastEventId ? "bg-emerald-50 transition-colors" : ""}`}>
                     <td className="py-1 align-top">{fmtTime(new Date(e.t))}</td>
                     <td className="align-top">{formatClock(e.relMs)}</td>
                     <td className="align-top">{e.type}</td>
@@ -464,6 +474,14 @@ export default function Page() {
             </table>
           </div>
         </div>
+
+        {toast && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="px-3 py-2 rounded-xl bg-slate-900 text-white shadow">
+              {toast.msg}
+            </div>
+          </div>
+        )}
 
         <div className="text-xs text-slate-500 pt-2 pb-6">
           This tool supports real-time documentation only and does not replace clinical judgment. Align usage with local ACLS policies and hospital documentation SOPs.
